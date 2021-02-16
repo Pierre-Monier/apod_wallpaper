@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:apod_wallpaper/models/apod_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:dio/dio.dart';
 
 void main() async {
@@ -33,37 +35,61 @@ class MyHomePage extends StatelessWidget {
   final title = "APOD WALLPAPER";
   final _dio = Dio();
 
-  Future<Map<String, dynamic>> fetchApi() async {
+  Future<Apod> _fetchApi() async {
     final test = await _dio.get(apiUrl);
     final jsonTest = jsonDecode(test.toString());
-    return Map<String, dynamic>.from(jsonTest);
+    return Apod.fromJson(Map<String, dynamic>.from(jsonTest));
   }
 
   Future<void> _setHasWallpaper() async {
-    await fetchApi();
+    print("TODO");
   }
 
-  Column _formatData({@required Map<String, dynamic> snapshot}) {
-    return Column(children: [
-      Text(snapshot["date"] + " : " +snapshot["title"]),
-      Image.network(
-        snapshot["url"],
+  YoutubePlayerController _getVideoController({@required String videoId}) {
+    return YoutubePlayerController(
+      initialVideoId: videoId,
+      flags: YoutubePlayerFlags(
+        autoPlay: false,
+      ),
+    );
+  }
+
+  Widget _getMainContent({@required Apod apod}) {
+    return apod.isImage() ? Image.network(
+        apod.url,
         loadingBuilder: (context, child, progress) {
           return progress == null ? child : CircularProgressIndicator(
             value: progress.cumulativeBytesLoaded / progress.expectedTotalBytes,
           );
         }
+    ) : YoutubePlayer(controller: _getVideoController(videoId: YoutubePlayer.convertUrlToId(apod.url)),);
+  }
+
+  Column _formatData({@required Apod snapshot}) {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text.rich(
+          TextSpan(
+            text: snapshot.date + ": ",
+            children: <TextSpan>[
+              TextSpan(text: snapshot.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+            ],
+          ),
+        ),
       ),
-      Text(snapshot["explanation"])
+      _getMainContent(apod: snapshot),
+      Padding(padding: const EdgeInsets.all(20),
+      child: Text(snapshot.explanation))
     ]);
   }
 
-  Column _formatError() {
-    return Column(children: [Icon(Icons.addchart)]);
+  Container _formatError() {
+    return Container(child: Icon(Icons.addchart));
   }
 
-  Column _formatLoading() {
-    return Column(children: [CircularProgressIndicator()]);
+  Container _formatLoading() {
+    return Container(child: CircularProgressIndicator());
   }
 
   Widget build(BuildContext context) {
@@ -72,13 +98,13 @@ class MyHomePage extends StatelessWidget {
         title: Text(title),
       ),
       body: Center(
-        child: Column(
+        child: SingleChildScrollView(child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            FutureBuilder<Map<String, dynamic>>(
-              future: fetchApi(),
-              builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                Column childrenTest;
+            FutureBuilder<Apod>(
+              future: _fetchApi(),
+              builder: (BuildContext context, AsyncSnapshot<Apod> snapshot) {
+                Widget childrenTest;
                 if (snapshot.hasData) {
                   childrenTest = _formatData(snapshot: snapshot.data);
                 } else if (snapshot.hasError) {
@@ -92,7 +118,7 @@ class MyHomePage extends StatelessWidget {
             )
           ],
         ),
-      ),
+      )),
       floatingActionButton: FloatingActionButton(
         onPressed: _setHasWallpaper,
         tooltip: 'Increment',
@@ -102,7 +128,5 @@ class MyHomePage extends StatelessWidget {
   }
 }
 
-// TODO Model implementation
 // TODO when you click on image, fullsize image
-// TODO Better design
 // TODO Background functionnality on float btn
