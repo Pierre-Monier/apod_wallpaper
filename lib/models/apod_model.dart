@@ -15,6 +15,10 @@ class Apod {
     return (thumbnailUrl == null);
   }
 
+  String getWallpaperUrl() {
+    return thumbnailUrl ?? url;
+  }
+
   Apod.fromJson(Map<String, dynamic> json) {
     date = json['date'];
     explanation = json['explanation'];

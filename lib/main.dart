@@ -1,10 +1,15 @@
 import 'dart:convert';
 
-import 'package:apod_wallpaper/models/apod_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:wallpaper_manager/wallpaper_manager.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:dio/dio.dart';
+
+import 'package:apod_wallpaper/models/apod_model.dart';
+
 
 void main() async {
   await DotEnv().load('.env');
@@ -34,15 +39,34 @@ class MyHomePage extends StatelessWidget {
   final String apiUrl;
   final title = "APOD WALLPAPER";
   final _dio = Dio();
+  Apod _apod;
 
-  Future<Apod> _fetchApi() async {
+  Future<Apod> _getApodData() async {
     final test = await _dio.get(apiUrl);
     final jsonTest = jsonDecode(test.toString());
-    return Apod.fromJson(Map<String, dynamic>.from(jsonTest));
+    final apod = Apod.fromJson(Map<String, dynamic>.from(jsonTest));
+    
+    _apod = apod;
+    return apod;
   }
 
-  Future<void> _setHasWallpaper() async {
-    print("TODO");
+  Future<void> _setHasWallpaper(BuildContext context) async {
+    final file = await DefaultCacheManager().getSingleFile(_apod.getWallpaperUrl());
+    final String result = await WallpaperManager.setWallpaperFromFile(file.path, WallpaperManager.HOME_SCREEN);
+
+    _showToast(result);
+  }
+
+  void _showToast(String result) {
+    Fluttertoast.showToast(
+        msg: result,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
   }
 
   YoutubePlayerController _getVideoController({@required String videoId}) {
@@ -62,7 +86,7 @@ class MyHomePage extends StatelessWidget {
             value: progress.cumulativeBytesLoaded / progress.expectedTotalBytes,
           );
         }
-    ) : YoutubePlayer(controller: _getVideoController(videoId: YoutubePlayer.convertUrlToId(apod.url)),);
+    ) : YoutubePlayer(controller: _getVideoController(videoId: YoutubePlayer.convertUrlToId(apod.url)));
   }
 
   Column _formatData({@required Apod snapshot}) {
@@ -85,7 +109,7 @@ class MyHomePage extends StatelessWidget {
   }
 
   Container _formatError() {
-    return Container(child: Icon(Icons.addchart));
+    return Container(child: Icon(Icons.signal_wifi_off ));
   }
 
   Container _formatLoading() {
@@ -102,31 +126,33 @@ class MyHomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             FutureBuilder<Apod>(
-              future: _fetchApi(),
+              future: _getApodData(),
               builder: (BuildContext context, AsyncSnapshot<Apod> snapshot) {
-                Widget childrenTest;
+                Widget children;
                 if (snapshot.hasData) {
-                  childrenTest = _formatData(snapshot: snapshot.data);
+                  children = _formatData(snapshot: snapshot.data);
                 } else if (snapshot.hasError) {
-                  childrenTest = _formatError();
+                  children = _formatError();
                 } else {
-                  childrenTest = _formatLoading();
+                  children = _formatLoading();
                 }
 
-                return childrenTest;
+                return children;
               },
             )
           ],
         ),
       )),
       floatingActionButton: FloatingActionButton(
-        onPressed: _setHasWallpaper,
+        onPressed: () => _apod != null ? _setHasWallpaper(context) : _showToast("Wait for data"),
         tooltip: 'Increment',
-        child: Icon(Icons.add),
+        child: Icon(Icons.wallpaper),
       ),
     );
   }
 }
 
-// TODO when you click on image, fullsize image
-// TODO Background functionnality on float btn
+// TODO when you click on image, full size image
+// TODO change date feature
+// TODO Background feature on float btn
+// TODO customise the background setting (HomeScreen | LockScreen | Both)
