@@ -1,16 +1,5 @@
 # apod_wallpaper
 
-A new Flutter project.
+A client app for the [APOD website](https://apod.nasa.gov/apod/astropix.html). You can also set the pictures of the day as wallpaper. I wrote an article about this application on [medium](https://p-monier96.medium.com/create-your-first-flutter-app-an-apod-cross-platform-application-f3786f5e8cdd)
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+You can start the app with `flutter run`
